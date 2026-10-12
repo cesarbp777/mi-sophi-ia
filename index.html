@@ -52,8 +52,8 @@
   </div>
 
   <script>
-    // 🔑 TU CLAVE API YA ESTÁ AQUÍ:
-    const CLAVE_API = "AQ.Ab8RN6JAWmkc9aow1DNBUEp0Pmg230hkHhR89H6SpLupt61sXQ";
+    // 🔑 TU NUEVA CLAVE API YA ESTÁ AQUÍ:
+    const CLAVE_API = "AQ.Ab8RN6Ih-NUHWGIy3pOwb5Rm6PjnLiE7ecNQ5dLk38e2QcXHyQ";
 
     const reconocer = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     reconocer.lang = 'es-ES';
@@ -88,10 +88,11 @@
       escribir("Tú", dicho);
 
       let respuesta;
-      if (CLAVE_API) {
+      if (CLAVE_API && CLAVE_API !== "") {
         try {
+          // URL compatible con claves tipo AQ.
           const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${CLAVE_API}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${CLAVE_API}`,
             {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
@@ -100,10 +101,14 @@
               })
             }
           );
+          
+          if (!resp.ok) throw new Error(`Error: ${resp.status}`);
+          
           const datos = await resp.json();
           respuesta = datos?.candidates?.[0]?.content?.parts?.[0]?.text || "No pude procesar eso, señor.";
-        } catch {
-          respuesta = "Parece que hay interferencia de red.";
+        } catch (error) {
+          console.error(error);
+          respuesta = "Hubo un problema de conexión con el sistema central.";
         }
       } else {
         respuesta = responderComando(dicho);
