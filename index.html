@@ -92,7 +92,7 @@
         try {
           // URL compatible con claves tipo AQ.
           const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${CLAVE_API}`,
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${CLAVE_API}`,
             {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
