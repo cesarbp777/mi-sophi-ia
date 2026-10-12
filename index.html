@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>J.A.R.V.I.S.</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', monospace;
+      background: #050505;
+      color: #00ff99;
+      min-height: 100vh;
+      padding: 30px;
+    }
+    .contenedor { max-width: 700px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 30px; letter-spacing: 3px; }
+    .pantalla {
+      background: #0a0a0a;
+      border: 2px solid #00ff99;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 20px;
+      min-height: 200px;
+      box-shadow: 0 0 20px rgba(0,255,153,0.2);
+    }
+    .estado { margin-bottom: 15px; font-weight: bold; }
+    .mensaje { margin: 10px 0; line-height: 1.6; }
+    button {
+      width: 100%;
+      background: #00ff99;
+      color: #000;
+      border: none;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { transform: scale(1.02); box-shadow: 0 0 15px #00ff99; }
+    button:disabled { background: #333; color: #888; cursor: not-allowed; transform: none; }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <h1>🤖 J.A.R.V.I.S.</h1>
+    <div class="pantalla">
+      <div class="estado" id="estado">Sistema listo. Presiona el botón y habla.</div>
+      <div id="conversacion"></div>
+    </div>
+    <button id="btnHablar">🎤 Activar micrófono</button>
+  </div>
+
+  <script>
+    // 🔑 TU CLAVE API YA ESTÁ AQUÍ:
+    const CLAVE_API = "AQ.Ab8RN6JAWmkc9aow1DNBUEp0Pmg230hkHhR89H6SpLupt61sXQ";
+
+    const reconocer = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    reconocer.lang = 'es-ES';
+    reconocer.interimResults = false;
+
+    function hablar(texto) {
+      const voz = new SpeechSynthesisUtterance(texto);
+      voz.lang = 'es-ES';
+      voz.rate = 1.05;
+      voz.pitch = 1;
+      speechSynthesis.speak(voz);
+    }
+
+    function escribir(quien, texto) {
+      const caja = document.getElementById('conversacion');
+      caja.innerHTML += `<div class="mensaje"><strong>${quien}:</strong> ${texto}</div>`;
+      caja.scrollTop = caja.scrollHeight;
+    }
+
+    const boton = document.getElementById('btnHablar');
+    const estado = document.getElementById('estado');
+
+    boton.onclick = () => {
+      estado.textContent = "🎧 Escuchando...";
+      boton.disabled = true;
+      reconocer.start();
+    };
+
+    reconocer.onresult = async (event) => {
+      const dicho = event.results[0][0].transcript;
+      estado.textContent = "✅ Capturado";
+      escribir("Tú", dicho);
+
+      let respuesta;
+      if (CLAVE_API) {
+        try {
+          const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${CLAVE_API}`,
+            {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                contents: [{parts: [{text: "Eres JARVIS, el asistente de Tony Stark. Responde con elegancia, conciso y amable. No uses emojis. Responde a: " + dicho}]}]
+              })
+            }
+          );
+          const datos = await resp.json();
+          respuesta = datos?.candidates?.[0]?.content?.parts?.[0]?.text || "No pude procesar eso, señor.";
+        } catch {
+          respuesta = "Parece que hay interferencia de red.";
+        }
+      } else {
+        respuesta = responderComando(dicho);
+      }
+
+      escribir("Jarvis", respuesta);
+      hablar(respuesta);
+    };
+
+    reconocer.onend = () => {
+      boton.disabled = false;
+      estado.textContent = "Sistema listo. Presiona para hablar.";
+    };
+
+    function responderComando(frase) {
+      const f = frase.toLowerCase();
+      if (f.includes('hola')) return "Hola. Todo funcionando correctamente. ¿En qué puedo asistir?";
+      if (f.includes('hora')) return `Son las ${new Date().toLocaleTimeString()}. La energía del sistema es óptima.`;
+      if (f.includes('nombre') || f.includes('quién eres')) return "Soy J.A.R.V.I.S., tu asistente personal.";
+      if (f.includes('abrir') && f.includes('google')) { window.open('https://google.com'); return "Abriendo Google, señor."; }
+      if (f.includes('estado')) return "Todos los sistemas funcionan al 100%. Sin novedades.";
+      return `Recibido: "${frase}". Conecta tu clave de Google Gemini para respuestas más inteligentes.`;
+    }
+  </script>
+</body>
+</html>
